@@ -1,0 +1,177 @@
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 20px 12px;
+  background: #f5f6f8;
+  color: #222;
+  font-family: sans-serif;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+  background: #fff;
+  border-radius: 12px;
+}
+
+h1 {
+  text-align: center;
+  font-size: 26px;
+  margin: 0 0 20px;
+}
+
+.description {
+  padding: 12px 18px;
+  margin-bottom: 24px;
+  background: #f0f4f8;
+  border-radius: 8px;
+}
+
+.description p {
+  margin: 6px 0;
+}
+
+.question-card {
+  padding: 20px 0;
+  border-top: 1px solid #ddd;
+}
+
+.question-card h2 {
+  font-size: 19px;
+  margin: 0 0 12px;
+}
+
+.question-card img {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  max-height: 360px;
+  object-fit: contain;
+  margin: 0 auto 20px;
+  background: #f7f7f7;
+}
+
+.scale-item {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) auto minmax(100px, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.scale-label {
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.scale-label.left {
+  text-align: right;
+}
+
+.scale-label.right {
+  text-align: left;
+}
+
+.options {
+  display: flex;
+  gap: 7px;
+  justify-content: center;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+#submitButton {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  margin: 28px auto 0;
+  padding: 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 17px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#submitButton:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #c62828;
+  font-weight: bold;
+  margin: 12px 0;
+}
+
+#message {
+  text-align: center;
+  font-weight: bold;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 16px 10px;
+  }
+
+  h1 {
+    font-size: 21px;
+  }
+
+  .scale-item {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .scale-label.left,
+  .scale-label.right {
+    text-align: center;
+  }
+
+  .scale-label.right {
+    order: 3;
+  }
+
+  .options {
+    order: 2;
+    gap: 10px;
+  }
+
+  .option input {
+    width: 20px;
+    height: 20px;
+  }
+
+  .option {
+    font-size: 12px;
+  }
+}

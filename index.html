@@ -1,0 +1,38 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>服の印象SD法アンケート</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>服の印象SD法アンケート</h1>
+
+    <section class="description">
+      <p>
+        表示された服の画像を見て、それぞれの形容詞対について、
+        あなたが感じた印象に最も近い数字を選択してください。
+      </p>
+      <p>
+        正解・不正解はありません。画像を見て直感的に回答してください。
+        すべての項目に回答すると、送信できます。
+      </p>
+      <p>回答する画像はランダムに5枚表示されます。</p>
+    </section>
+
+    <div id="loading">画像を読み込んでいます...</div>
+    <div id="error" class="error" role="alert"></div>
+    <div id="questions"></div>
+
+    <button id="submitButton" type="button" hidden>
+      回答を送信
+    </button>
+    <p id="message" role="status"></p>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
