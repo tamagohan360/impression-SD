@@ -3,7 +3,7 @@ const REPOSITORY = "impression-SD";
 const IMAGE_FOLDER = "images";
 
 const GAS_URL =
-  "https://script.google.com/macros/s/AKfycby-cBshtQaIloNtTn-qkV2XBin0IwqbOpJ-cG87Vm18GUTPTcjVS1Z3ZkgakLdJKYjQ/exec";
+  "https://script.google.com/macros/s/AKfycbyMXkdPLPzSqs8Y_hEbFne9bC-PPSmVhHuYzNNFhBk03kr4ORJR2uUt9G-0Tfb5ffhN1w/exec";
 
 const QUESTIONS = [
   ["不真面目", "真面目"],
