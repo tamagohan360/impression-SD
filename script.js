@@ -78,16 +78,38 @@ function getRespondentId() {
 }
 
 // GitHubから画像一覧を取得
+// GitHub APIを使ってimagesフォルダ内の画像を自動取得する関数
 async function getImages() {
   const api = `https://api.github.com/repos/\({GITHUB_USER}/\){REPOSITORY}/contents/${IMAGE_FOLDER}`;
-  const response = await fetch(api);
+  
+  const response = await fetch(api, {
+    headers: {
+      'Accept': 'application/vnd.github.v3+json'
+    }
+  });
+
   if (!response.ok) {
-    throw new Error("画像一覧を取得できません。GitHubのimagesフォルダを確認してください。");
+    if (response.status === 404) {
+      throw new Error("404エラー: imagesフォルダが見つかりません。リポジトリが「Private」になっていないか、フォルダ名が小文字の「images」になっているか確認してください。");
+    } else if (response.status === 403) {
+      throw new Error("403エラー: GitHub APIの利用制限に達しました。1分ほど置いてから再読み込みしてください。");
+    } else {
+      throw new Error(`GitHub通信エラー: HTTP ${response.status}`);
+    }
   }
+
   const data = await response.json();
-  return data
+
+  // 取得したファイル群から画像（jpg, jpeg, png, webp）だけを抽出
+  const imageFiles = data
     .filter(item => item.type === "file" && /\.(jpe?g|png|webp)$/i.test(item.name))
     .map(item => ({ name: item.name, url: item.download_url }));
+
+  if (imageFiles.length === 0) {
+    throw new Error("images フォルダの中に画像ファイル（.jpg / .png など）が見つかりませんでした。");
+  }
+
+  return imageFiles;
 }
 
 // 質問項目（5段階ラジオボタン）の描画
