@@ -4,7 +4,7 @@ const REPOSITORY = "impression-SD";
 const IMAGE_FOLDER = "images";
 
 const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbx3vVfXUkettnN0jTuwgTGYJpoP0GRloUj6qhhwEBHIEWqhKjAyEPk7gwnl0Rw1DGIa/exec";
+  "https://script.google.com/macros/s/AKfycbw5b0NGm2lyvZBAcbTkDKoP7rwnfdtNs6c69c_-TiNQkuPVeYDPOPvn_2BUmHBBn9Nr/exec";
 
 const IMAGE_COUNT = 5;
 
