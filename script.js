@@ -1,8 +1,7 @@
 const GITHUB_USER = "tamagohan360";
 const REPOSITORY = "impression-SD";
 const IMAGE_FOLDER = "images";
-const GAS_URL = "ここにGoogle Apps ScriptのウェブアプリURLを貼り付け";
-
+const GAS_URL = "https://script.google.com/macros/s/AKfycbw5b0NGm2lyvZBAcbTkDKoP7rwnfdtNs6c69c_-TiNQkuPVeYDPOPvn_2BUmHBBn9Nr/exec"
 const QUESTIONS = [
   ["不真面目", "真面目"],
   ["洗練されていない", "洗練された"],
