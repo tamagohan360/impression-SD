@@ -9,28 +9,47 @@
 <body>
   <main class="container">
     <h1>服の印象アンケート</h1>
-    <p class="intro">表示された服の画像を見て、各形容詞について最も近い評価を1つ選んでください。</p>
-    <div id="status" class="status" aria-live="polite">画像を読み込んでいます...</div>
+    <p class="intro">
+      表示された服の画像を見て、各形容詞について
+      最も近い評価を1つ選んでください。
+    </p>
+
+    <div id="status" class="status" aria-live="polite">
+      画像を読み込んでいます...
+    </div>
+
     <section id="survey" hidden>
       <div class="progress-wrap">
         <div id="progress-text">1 / 5 枚目</div>
-        <div class="progress-track"><div id="progress-bar"></div></div>
+        <div class="progress-track">
+          <div id="progress-bar"></div>
+        </div>
       </div>
+
       <div class="image-panel">
         <img id="clothing-image" alt="評価する服の画像">
         <p id="image-name" class="image-name"></p>
       </div>
+
       <form id="answer-form">
-        <p class="scale-guide">左側を1、中央を3、右側を5として評価してください。</p>
+        <p class="scale-guide">
+          左側を1、中央を3、右側を5として評価してください。
+        </p>
+
         <div id="questions"></div>
-        <button id="submit-button" type="submit">この画像の回答を送信</button>
+
+        <button id="submit-button" type="submit">
+          この画像の回答を送信
+        </button>
       </form>
     </section>
+
     <section id="complete" hidden>
       <h2>アンケートが完了しました</h2>
       <p>ご回答ありがとうございました。</p>
     </section>
   </main>
+
   <script src="script.js"></script>
 </body>
 </html>
