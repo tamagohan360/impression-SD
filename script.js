@@ -50,7 +50,6 @@ let answers = [];
 function showError(message) {
   statusEl.textContent = message;
   statusEl.classList.add("error");
-  statusEl.hidden = false;
 }
 
 function shuffle(items) {
@@ -62,18 +61,20 @@ function shuffle(items) {
   return result;
 }
 
-// GASへの通信を行わず、ブラウザ側でユニークな回答者IDを生成
-function getRespondentId() {
-  let saved = localStorage.getItem(RESPONDENT_KEY);
-  if (!saved) {
-    saved = "R" + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
-    localStorage.setItem(RESPONDENT_KEY, saved);
-  }
-  return saved;
+async function getRespondentId() {
+  const saved = localStorage.getItem(RESPONDENT_KEY);
+  if (saved) return saved;
+
+  const response = await fetch(GAS_URL, { method: "GET", cache: "no-store" });
+  if (!response.ok) throw new Error("回答者IDを取得できませんでした。");
+  const data = await response.json();
+  if (!data.respondentId) throw new Error("回答者IDが返されませんでした。");
+  localStorage.setItem(RESPONDENT_KEY, data.respondentId);
+  return data.respondentId;
 }
 
 async function getImages() {
-  const api = `https://api.github.com/repos/\({GITHUB_USER}/\){REPOSITORY}/contents/${IMAGE_FOLDER}`;
+  const api = `https://api.github.com/repos/${GITHUB_USER}/${REPOSITORY}/contents/${IMAGE_FOLDER}`;
   const response = await fetch(api);
   if (!response.ok) throw new Error("画像一覧を取得できません。GitHubのimagesフォルダを確認してください。");
   const data = await response.json();
@@ -89,7 +90,7 @@ function renderQuestions() {
     row.className = "question";
     const title = document.createElement("div");
     title.className = "question-title";
-    title.textContent = `\({index + 1}.\){left} ― ${right}`;
+    title.textContent = `${index + 1}. ${left} ― ${right}`;
     row.appendChild(title);
 
     const scale = document.createElement("div");
@@ -127,7 +128,7 @@ function renderCurrentImage() {
   }
 
   const image = images[currentIndex];
-  progressText.textContent = `\({currentIndex + 1} /\){Math.min(images.length, IMAGE_COUNT)} 枚目`;
+  progressText.textContent = `${currentIndex + 1} / ${Math.min(images.length, IMAGE_COUNT)} 枚目`;
   progressBar.style.width = `${((currentIndex + 1) / Math.min(images.length, IMAGE_COUNT)) * 100}%`;
   imageEl.src = image.url;
   imageEl.alt = `評価する服の画像 ${currentIndex + 1}`;
@@ -137,7 +138,7 @@ function renderCurrentImage() {
   const previous = answers.find(item => item.image === image.name);
   if (previous) {
     previous.scores.forEach((score, i) => {
-      const input = questionsEl.querySelector(`input[name="q\({i}"][value="\){score}"]`);
+      const input = questionsEl.querySelector(`input[name="q${i}"][value="${score}"]`);
       if (input) input.checked = true;
     });
   }
@@ -169,14 +170,13 @@ formEl.addEventListener("submit", async event => {
   statusEl.textContent = "回答を送信しています...";
 
   try {
-    // text/plain形式でJSON文字列を送信（no-cors時のプレフライト回避）
-    await fetch(GAS_URL, {
+    const response = await fetch(GAS_URL, {
       method: "POST",
       mode: "no-cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ respondentId, image: image.name, scores })
     });
-
+    // no-corsではサーバー応答を読み取れないため、通信開始後に次へ進みます。
     currentIndex++;
     localStorage.setItem(ANSWERS_KEY, JSON.stringify(answers));
     localStorage.setItem(INDEX_KEY, String(currentIndex));
@@ -196,17 +196,17 @@ async function init() {
     if (!GAS_URL.startsWith("https://script.google.com/")) {
       throw new Error("script.js の GAS_URL に、デプロイしたウェブアプリURLを設定してください。");
     }
-    respondentId = getRespondentId();
+    respondentId = await getRespondentId();
     const allImages = await getImages();
     if (allImages.length < IMAGE_COUNT) {
-      throw new Error(`imagesフォルダに画像が\({IMAGE_COUNT}枚以上必要です。現在は\){allImages.length}枚です。`);
+      throw new Error(`imagesフォルダに画像が${IMAGE_COUNT}枚以上必要です。現在は${allImages.length}枚です。`);
     }
 
     const savedAnswers = JSON.parse(localStorage.getItem(ANSWERS_KEY) || "[]");
     const savedIndex = Number(localStorage.getItem(INDEX_KEY) || "0");
     answers = Array.isArray(savedAnswers) ? savedAnswers : [];
     images = shuffle(allImages).slice(0, IMAGE_COUNT);
-    
+    // ページ再読み込み後も同じ画像順を維持するため、選択画像を保存
     const savedImages = JSON.parse(localStorage.getItem("impressionSDImages") || "null");
     if (Array.isArray(savedImages) && savedImages.length === IMAGE_COUNT) {
       const byName = new Map(allImages.map(item => [item.name, item]));
