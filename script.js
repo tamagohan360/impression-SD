@@ -110,7 +110,7 @@ function createQuestion(image, imageIndex) {
     const options = document.createElement("div");
     options.className = "options";
 
-    // 5段階評価に変更（value = 1 〜 5）
+    // 5段階評価（value = 1 〜 5）
     for (let value = 1; value <= 5; value++) {
       const label = document.createElement("label");
       label.className = "option";
