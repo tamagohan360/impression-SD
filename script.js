@@ -1,7 +1,7 @@
 const GITHUB_USER = "tamagohan360";
 const REPOSITORY = "impression-SD";
 const IMAGE_FOLDER = "images";
-const GAS_URL = "https://script.google.com/macros/s/AKfycbw5b0NGm2lyvZBAcbTkDKoP7rwnfdtNs6c69c_-TiNQkuPVeYDPOPvn_2BUmHBBn9Nr/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyhX0MdW4bna7BlWufcvZfdzHO_GR2rh1Gd8QfvyRe_Zq_K5YxQJQndsqPitnhAQ2Iu/exec";
 
 const QUESTIONS = [
   ["不真面目", "真面目"],
