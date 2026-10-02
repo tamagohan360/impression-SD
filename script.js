@@ -1,4 +1,3 @@
-```javascript
 const GITHUB_USER = "tamagohan360";
 const REPOSITORY = "impression-SD";
 const IMAGE_FOLDER = "images";
@@ -66,6 +65,7 @@ function shuffle(items) {
 
   for (let i = result.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
+
     [result[i], result[j]] = [result[j], result[i]];
   }
 
@@ -91,11 +91,14 @@ async function getRespondentId() {
 
   const data = await response.json();
 
-  if (!data.success || !data.respondentId) {
-    throw new Error("回答者IDを取得できませんでした。");
+  if (!data.respondentId) {
+    throw new Error("回答者IDが返されませんでした。");
   }
 
-  localStorage.setItem(RESPONDENT_KEY, data.respondentId);
+  localStorage.setItem(
+    RESPONDENT_KEY,
+    data.respondentId
+  );
 
   return data.respondentId;
 }
@@ -126,7 +129,7 @@ async function getImages() {
     }));
 }
 
-// 質問を作成
+// 20項目の質問を作成
 function renderQuestions() {
   questionsEl.innerHTML = "";
 
@@ -136,7 +139,8 @@ function renderQuestions() {
 
     const title = document.createElement("div");
     title.className = "question-title";
-    title.textContent = `${index + 1}. ${left} ― ${right}`;
+    title.textContent =
+      `${index + 1}. ${left} ― ${right}`;
 
     row.appendChild(title);
 
@@ -206,6 +210,7 @@ function renderCurrentImage() {
 
   renderQuestions();
 
+  // 既に回答済みの画像なら回答を復元
   const previous = answers.find(
     item => item.image === image.name
   );
@@ -223,7 +228,7 @@ function renderCurrentImage() {
   }
 }
 
-// 回答送信
+// 送信ボタン
 formEl.addEventListener("submit", async event => {
   event.preventDefault();
 
@@ -240,7 +245,9 @@ formEl.addEventListener("submit", async event => {
   });
 
   if (scores.some(value =>
-    !Number.isInteger(value) || value < 1 || value > 5
+    !Number.isInteger(value) ||
+    value < 1 ||
+    value > 5
   )) {
     showError("すべての項目を回答してください。");
     return;
@@ -265,15 +272,12 @@ formEl.addEventListener("submit", async event => {
 
   submitButton.disabled = true;
   submitButton.textContent = "送信中...";
+
   statusEl.hidden = false;
   statusEl.classList.remove("error");
   statusEl.textContent = "回答を送信しています...";
 
   try {
-    // no-corsでは保存結果を確認できないため、
-    // 送信前に回答をブラウザへ一時保存する
-    localStorage.setItem(ANSWERS_KEY, JSON.stringify(answers));
-
     await fetch(GAS_URL, {
       method: "POST",
       mode: "no-cors",
@@ -287,9 +291,21 @@ formEl.addEventListener("submit", async event => {
       })
     });
 
+    // no-corsではサーバーの保存結果を直接確認できません。
     currentIndex++;
 
-    localStorage.setItem(INDEX_KEY, String(currentIndex));
+    localStorage.setItem(
+      ANSWERS_KEY,
+      JSON.stringify(answers)
+    );
+
+    localStorage.setItem(
+      INDEX_KEY,
+      String(currentIndex)
+    );
+
+    statusEl.textContent =
+      "送信処理を行いました。次の画像に進みます。";
 
     renderCurrentImage();
 
@@ -327,8 +343,11 @@ async function init() {
       localStorage.getItem(INDEX_KEY) || "0"
     );
 
-    answers = Array.isArray(savedAnswers) ? savedAnswers : [];
+    answers = Array.isArray(savedAnswers)
+      ? savedAnswers
+      : [];
 
+    // 保存済みの画像順があれば復元
     const savedImages = JSON.parse(
       localStorage.getItem(IMAGES_KEY) || "null"
     );
@@ -341,13 +360,16 @@ async function init() {
         allImages.map(item => [item.name, item])
       );
 
-      const restored = savedImages.map(name => byName.get(name));
+      const restored = savedImages.map(
+        name => byName.get(name)
+      );
 
       if (restored.every(Boolean)) {
         images = restored;
       }
     }
 
+    // 初回はランダムに5枚選択
     if (images.length === 0) {
       images = shuffle(allImages).slice(0, IMAGE_COUNT);
 
@@ -377,4 +399,3 @@ async function init() {
 }
 
 init();
-```
