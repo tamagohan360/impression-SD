@@ -369,15 +369,36 @@ async function init() {
       }
     }
 
-    // 初回はランダムに5枚選択
-    if (images.length === 0) {
-      images = shuffle(allImages).slice(0, IMAGE_COUNT);
+    // 使用する画像を指定
+    const TARGET_IMAGES = [
+      "blouse_green (3).jpg",
+      "sweater_white (4).jpg",
+      "sweater_red (6).jpg",
+      "jacket_black (3).jpg",
+      "jacket_green (2).jpg"
+    ];
 
-      localStorage.setItem(
-        IMAGES_KEY,
-        JSON.stringify(images.map(item => item.name))
+    // 指定した画像を取得
+    const byName = new Map(
+      allImages.map(item => [item.name, item])
+    );
+
+    images = TARGET_IMAGES.map(
+      name => byName.get(name)
+    );
+
+    // 指定した画像が見つからない場合
+    if (images.some(image => !image)) {
+      throw new Error(
+        "指定した画像の一部がGitHubのimagesフォルダに見つかりません。"
       );
     }
+
+    // 指定した画像順を保存
+    localStorage.setItem(
+      IMAGES_KEY,
+      JSON.stringify(images.map(item => item.name))
+    );
 
     currentIndex =
       Number.isInteger(savedIndex) && savedIndex >= 0
