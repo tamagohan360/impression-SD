@@ -1,9 +1,32 @@
-const GITHUB_USER = "tamagohan360";
-const REPOSITORY = "impression-SD";
-const IMAGE_FOLDER = "images";
+// ===============================
+// 設定
+// ===============================
 
+// Google Apps Script のURL
 const GAS_URL =
   "https://script.google.com/macros/s/AKfycbyMXkdPLPzSqs8Y_hEbFne9bC-PPSmVhHuYzNNFhBk03kr4ORJR2uUt9G-0Tfb5ffhN1w/exec";
+
+// GitHubの画像URL
+const GITHUB_IMAGE_BASE =
+  "https://raw.githubusercontent.com/tamagohan360/impression-SD/main/images/";
+
+
+// ===============================
+// 使用する画像
+// ===============================
+
+const TARGET_IMAGES = [
+  "blouse_green (3).jpg",
+  "sweater_white (4).jpg",
+  "sweater_red (6).jpg",
+  "jacket_black (3).jpg",
+  "jacket_green (2).jpg"
+];
+
+
+// ===============================
+// SD法の質問
+// ===============================
 
 const QUESTIONS = [
   ["不真面目", "真面目"],
@@ -28,392 +51,678 @@ const QUESTIONS = [
   ["品がない", "上品"]
 ];
 
-const IMAGE_COUNT = 5;
 
-const RESPONDENT_KEY = "impressionSDRespondentId";
-const ANSWERS_KEY = "impressionSDAnswers";
-const INDEX_KEY = "impressionSDCurrentIndex";
-const IMAGES_KEY = "impressionSDImages";
+// ===============================
+// localStorage
+// ===============================
 
-const statusEl = document.getElementById("status");
-const surveyEl = document.getElementById("survey");
-const completeEl = document.getElementById("complete");
+const RESPONDENT_ID_KEY =
+  "impressionSDRespondentId";
 
-const imageEl = document.getElementById("clothing-image");
-const imageNameEl = document.getElementById("image-name");
-const questionsEl = document.getElementById("questions");
+const ANSWERS_KEY =
+  "impressionSDAnswers";
 
-const formEl = document.getElementById("answer-form");
-const submitButton = document.getElementById("submit-button");
+const INDEX_KEY =
+  "impressionSDCurrentIndex";
 
-const progressText = document.getElementById("progress-text");
-const progressBar = document.getElementById("progress-bar");
+
+// ===============================
+// 変数
+// ===============================
 
 let images = [];
-let respondentId = "";
+
 let currentIndex = 0;
-let answers = [];
 
-function showError(message) {
-  statusEl.textContent = message;
-  statusEl.classList.add("error");
-  statusEl.hidden = false;
+let answers = {};
+
+
+// ===============================
+// HTML要素
+// ===============================
+
+const imageEl =
+  document.getElementById("currentImage");
+
+const imageNameEl =
+  document.getElementById("imageName");
+
+const questionsEl =
+  document.getElementById("questions");
+
+const progressEl =
+  document.getElementById("progress");
+
+const submitBtn =
+  document.getElementById("submitBtn");
+
+
+// ===============================
+// 指定画像を作成
+// ===============================
+
+function createImages() {
+
+  images = TARGET_IMAGES.map(name => {
+
+    return {
+      name: name,
+
+      // ファイル名をURL用に変換
+      url:
+        GITHUB_IMAGE_BASE +
+        encodeURIComponent(name)
+    };
+
+  });
+
 }
 
-function shuffle(items) {
-  const result = [...items];
 
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+// ===============================
+// 回答者ID取得
+// ===============================
 
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-
-  return result;
-}
-
-// 回答者IDを取得
 async function getRespondentId() {
-  const saved = localStorage.getItem(RESPONDENT_KEY);
 
-  if (saved) {
-    return saved;
-  }
-
-  const response = await fetch(GAS_URL, {
-    method: "GET",
-    cache: "no-store"
-  });
-
-  if (!response.ok) {
-    throw new Error("回答者IDを取得できませんでした。");
-  }
-
-  const data = await response.json();
-
-  if (!data.respondentId) {
-    throw new Error("回答者IDが返されませんでした。");
-  }
-
-  localStorage.setItem(
-    RESPONDENT_KEY,
-    data.respondentId
-  );
-
-  return data.respondentId;
-}
-
-// GitHubのimagesフォルダから画像一覧を取得
-async function getImages() {
-  const api =
-    https://api.github.com/repos/${GITHUB_USER}/${REPOSITORY}/contents/${IMAGE_FOLDER};
-
-  const response = await fetch(api);
-
-  if (!response.ok) {
-    throw new Error(
-      "画像一覧を取得できません。GitHubのimagesフォルダを確認してください。"
-    );
-  }
-
-  const data = await response.json();
-
-  return data
-    .filter(item =>
-      item.type === "file" &&
-      /\.(jpe?g|png|webp)$/i.test(item.name)
-    )
-    .map(item => ({
-      name: item.name,
-      url: item.download_url
-    }));
-}
-
-// 20項目の質問を作成
-function renderQuestions() {
-  questionsEl.innerHTML = "";
-
-  QUESTIONS.forEach(([left, right], index) => {
-    const row = document.createElement("div");
-    row.className = "question";
-
-    const title = document.createElement("div");
-    title.className = "question-title";
-    title.textContent =
-      ${index + 1}. ${left} ―${right};
-
-    row.appendChild(title);
-
-    const scale = document.createElement("div");
-    scale.className = "scale";
-
-    const descriptions = [
-      "左に近い",
-      "やや左",
-      "中間",
-      "やや右",
-      "右に近い"
-    ];
-
-    for (let value = 1; value <= 5; value++) {
-      const label = document.createElement("label");
-
-      const input = document.createElement("input");
-      input.type = "radio";
-      input.name = q${index};
-      input.value = String(value);
-      input.required = true;
-
-      const number = document.createElement("span");
-      number.className = "scale-number";
-      number.textContent = String(value);
-
-      const desc = document.createElement("span");
-      desc.className = "scale-desc";
-      desc.textContent = descriptions[value - 1];
-
-      label.append(input, number, desc);
-      scale.appendChild(label);
-    }
-
-    row.appendChild(scale);
-    questionsEl.appendChild(row);
-  });
-}
-
-// 現在の画像を表示
-function renderCurrentImage() {
-  if (currentIndex >= images.length ||
-      currentIndex >= IMAGE_COUNT) {
-    surveyEl.hidden = true;
-    completeEl.hidden = false;
-    statusEl.hidden = true;
-
-    localStorage.removeItem(ANSWERS_KEY);
-    localStorage.removeItem(INDEX_KEY);
-    localStorage.removeItem(IMAGES_KEY);
-
-    return;
-  }
-
-  const image = images[currentIndex];
-
-  progressText.textContent =
-    ${currentIndex + 1} /${Math.min(images.length, IMAGE_COUNT)} 枚目;
-
-  progressBar.style.width =
-    ${((currentIndex + 1) / Math.min(images.length, IMAGE_COUNT)) * 100}%;
-
-  imageEl.src = image.url;
-  imageEl.alt = 評価する服の画像 ${currentIndex + 1};
-  imageNameEl.textContent = image.name;
-
-  renderQuestions();
-
-  // 既に回答済みの画像なら回答を復元
-  const previous = answers.find(
-    item => item.image === image.name
-  );
-
-  if (previous) {
-    previous.scores.forEach((score, i) => {
-      const input = questionsEl.querySelector(
-        input[name="q${i}"][value="${score}"]
-      );
-
-      if (input) {
-        input.checked = true;
-      }
-    });
-  }
-}
-
-// 送信ボタン
-formEl.addEventListener("submit", async event => {
-  event.preventDefault();
-
-  if (!formEl.reportValidity()) {
-    return;
-  }
-
-  const scores = QUESTIONS.map((_, i) => {
-    const selected = formEl.querySelector(
-      input[name="q${i}"]:checked
+  const savedId =
+    localStorage.getItem(
+      RESPONDENT_ID_KEY
     );
 
-    return selected ? Number(selected.value) : null;
-  });
+  if (savedId) {
 
-  if (scores.some(value =>
-    !Number.isInteger(value) ||
-    value < 1 ||
-    value > 5
-  )) {
-    showError("すべての項目を回答してください。");
-    return;
+    return savedId;
+
   }
 
-  const image = images[currentIndex];
-
-  const answer = {
-    image: image.name,
-    scores: scores
-  };
-
-  const existing = answers.findIndex(
-    item => item.image === image.name
-  );
-
-  if (existing >= 0) {
-    answers[existing] = answer;
-  } else {
-    answers.push(answer);
-  }
-
-  submitButton.disabled = true;
-  submitButton.textContent = "送信中...";
-
-  statusEl.hidden = false;
-  statusEl.classList.remove("error");
-  statusEl.textContent = "回答を送信しています...";
 
   try {
-    await fetch(GAS_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
-      body: JSON.stringify({
-        respondentId: respondentId,
-        image: image.name,
-        scores: scores
-      })
-    });
 
-    // no-corsではサーバーの保存結果を直接確認できません。
-    currentIndex++;
+    const response =
+      await fetch(GAS_URL);
+
+    const data =
+      await response.json();
+
+    if (!data.respondentId) {
+
+      throw new Error(
+        "回答者IDを取得できませんでした。"
+      );
+
+    }
+
+    const respondentId =
+      data.respondentId;
+
+    localStorage.setItem(
+      RESPONDENT_ID_KEY,
+      respondentId
+    );
+
+    return respondentId;
+
+  } catch (error) {
+
+    console.error(
+      "回答者ID取得エラー:",
+      error
+    );
+
+    throw error;
+
+  }
+
+}
+
+
+// ===============================
+// 質問表示
+// ===============================
+
+function renderQuestions() {
+
+  questionsEl.innerHTML = "";
+
+
+  QUESTIONS.forEach(
+    (question, index) => {
+
+      const questionDiv =
+        document.createElement("div");
+
+      questionDiv.className =
+        "question";
+
+
+      // 質問タイトル
+      const title =
+        document.createElement("div");
+
+      title.className =
+        "question-title";
+
+      title.textContent =
+        `${index + 1}. ${question[0]} ― ${question[1]}`;
+
+      questionDiv.appendChild(title);
+
+
+      // 5段階評価
+      const scale =
+        document.createElement("div");
+
+      scale.className =
+        "scale";
+
+
+      for (
+        let value = 1;
+        value <= 5;
+        value++
+      ) {
+
+        const label =
+          document.createElement("label");
+
+
+        const radio =
+          document.createElement("input");
+
+        radio.type =
+          "radio";
+
+        radio.name =
+          `question-${index}`;
+
+        radio.value =
+          value;
+
+
+        // 以前の回答を復元
+        const imageName =
+          images[currentIndex]?.name;
+
+
+        if (
+          imageName &&
+          answers[imageName] &&
+          answers[imageName][index] == value
+        ) {
+
+          radio.checked = true;
+
+        }
+
+
+        label.appendChild(radio);
+
+
+        const span =
+          document.createElement("span");
+
+        span.textContent =
+          value;
+
+        label.appendChild(span);
+
+
+        scale.appendChild(label);
+
+      }
+
+
+      questionDiv.appendChild(scale);
+
+      questionsEl.appendChild(
+        questionDiv
+      );
+
+    }
+  );
+
+}
+
+
+// ===============================
+// 現在の画像を表示
+// ===============================
+
+function renderCurrentImage() {
+
+  const image =
+    images[currentIndex];
+
+
+  if (!image) {
+
+    console.error(
+      "画像がありません:",
+      currentIndex
+    );
+
+    return;
+
+  }
+
+
+  console.log(
+    "表示する画像:",
+    image.name
+  );
+
+  console.log(
+    "画像URL:",
+    image.url
+  );
+
+
+  // 画像を表示
+  imageEl.src =
+    image.url;
+
+
+  // 画像名
+  if (imageNameEl) {
+
+    imageNameEl.textContent =
+      image.name;
+
+  }
+
+
+  // 進捗
+  if (progressEl) {
+
+    progressEl.textContent =
+      `${currentIndex + 1} / ${images.length}`;
+
+  }
+
+
+  // 質問表示
+  renderQuestions();
+
+}
+
+
+// ===============================
+// 現在の回答取得
+// ===============================
+
+function getCurrentAnswers() {
+
+  const currentAnswers = [];
+
+
+  for (
+    let i = 0;
+    i < QUESTIONS.length;
+    i++
+  ) {
+
+    const selected =
+      document.querySelector(
+        `input[name="question-${i}"]:checked`
+      );
+
+
+    if (!selected) {
+
+      return null;
+
+    }
+
+
+    currentAnswers.push(
+      Number(selected.value)
+    );
+
+  }
+
+
+  return currentAnswers;
+
+}
+
+
+// ===============================
+// GASへ回答送信
+// ===============================
+
+async function sendAnswers(
+  respondentId,
+  imageName,
+  scores
+) {
+
+  const data = {
+
+    respondentId:
+      respondentId,
+
+    image:
+      imageName,
+
+    scores:
+      scores
+
+  };
+
+
+  console.log(
+    "送信データ:",
+    data
+  );
+
+
+  await fetch(
+    GAS_URL,
+    {
+
+      method: "POST",
+
+      mode: "no-cors",
+
+      headers: {
+
+        "Content-Type":
+          "text/plain;charset=utf-8"
+
+      },
+
+      body:
+        JSON.stringify(data)
+
+    }
+  );
+
+}
+
+
+// ===============================
+// 初期化
+// ===============================
+
+async function init() {
+
+  try {
+
+    console.log(
+      "アンケート開始"
+    );
+
+
+    // -------------------------------
+    // 画像を設定
+    // -------------------------------
+
+    createImages();
+
+
+    console.log(
+      "使用画像:",
+      images
+    );
+
+
+    // -------------------------------
+    // 回答データを復元
+    // -------------------------------
+
+    const savedAnswers =
+      localStorage.getItem(
+        ANSWERS_KEY
+      );
+
+
+    if (savedAnswers) {
+
+      answers =
+        JSON.parse(
+          savedAnswers
+        );
+
+    } else {
+
+      answers = {};
+
+    }
+
+
+    // -------------------------------
+    // 現在の画像番号を復元
+    // -------------------------------
+
+    const savedIndex =
+      localStorage.getItem(
+        INDEX_KEY
+      );
+
+
+    if (savedIndex !== null) {
+
+      currentIndex =
+        Number(savedIndex);
+
+    } else {
+
+      currentIndex = 0;
+
+    }
+
+
+    // 範囲外対策
+    if (
+      currentIndex < 0 ||
+      currentIndex >= images.length
+    ) {
+
+      currentIndex = 0;
+
+    }
+
+
+    // -------------------------------
+    // 画像表示
+    // -------------------------------
+
+    renderCurrentImage();
+
+
+    // -------------------------------
+    // 回答者ID取得
+    // -------------------------------
+
+    await getRespondentId();
+
+
+    console.log(
+      "初期化完了"
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "初期化エラー:",
+      error
+    );
+
+
+    alert(
+      "アンケートの読み込みに失敗しました。\n\n" +
+      error.message
+    );
+
+  }
+
+}
+
+
+// ===============================
+// 次へボタン
+// ===============================
+
+submitBtn.addEventListener(
+  "click",
+  async function () {
+
+    // 回答取得
+    const currentAnswers =
+      getCurrentAnswers();
+
+
+    // 未回答
+    if (!currentAnswers) {
+
+      alert(
+        "すべての項目に回答してください。"
+      );
+
+      return;
+
+    }
+
+
+    // 現在の画像
+    const currentImage =
+      images[currentIndex];
+
+
+    // 回答を保存
+    answers[currentImage.name] =
+      currentAnswers;
+
 
     localStorage.setItem(
       ANSWERS_KEY,
       JSON.stringify(answers)
     );
 
-    localStorage.setItem(
-      INDEX_KEY,
-      String(currentIndex)
-    );
 
-    statusEl.textContent =
-      "送信処理を行いました。次の画像に進みます。";
+    // ボタン無効化
+    submitBtn.disabled = true;
 
-    renderCurrentImage();
 
-  } catch (error) {
-    showError(
-      "送信に失敗しました。通信環境を確認して、もう一度お試しください。"
-    );
+    const originalText =
+      submitBtn.textContent;
 
-    console.error(error);
 
-  } finally {
-    submitButton.disabled = false;
-    submitButton.textContent = "この画像の回答を送信";
-  }
-});
+    submitBtn.textContent =
+      "送信中...";
 
-// 初期化
-async function init() {
-  try {
-    respondentId = await getRespondentId();
 
-    const allImages = await getImages();
+    try {
 
-    if (allImages.length < IMAGE_COUNT) {
-      throw new Error(
-        imagesフォルダに画像が${IMAGE_COUNT}枚以上必要です。現在は${allImages.length}枚です。
-      );
-    }
+      // 回答者ID
+      const respondentId =
+        localStorage.getItem(
+          RESPONDENT_ID_KEY
+        );
 
-    const savedAnswers = JSON.parse(
-      localStorage.getItem(ANSWERS_KEY) || "[]"
-    );
 
-    const savedIndex = Number(
-      localStorage.getItem(INDEX_KEY) || "0"
-    );
-
-    answers = Array.isArray(savedAnswers)
-      ? savedAnswers
-      : [];
-
-    // 保存済みの画像順があれば復元
-    const savedImages = JSON.parse(
-      localStorage.getItem(IMAGES_KEY) || "null"
-    );
-
-    if (
-      Array.isArray(savedImages) &&
-      savedImages.length === IMAGE_COUNT
-    ) {
-      const byName = new Map(
-        allImages.map(item => [item.name, item])
+      // GASへ送信
+      await sendAnswers(
+        respondentId,
+        currentImage.name,
+        currentAnswers
       );
 
-      const restored = savedImages.map(
-        name => byName.get(name)
-      );
 
-      if (restored.every(Boolean)) {
-        images = restored;
+      // 次の画像
+      currentIndex++;
+
+
+      // -------------------------------
+      // 5枚すべて終了
+      // -------------------------------
+
+      if (
+        currentIndex >= images.length
+      ) {
+
+        alert(
+          "アンケートは以上で終了です。\n\n" +
+          "ご協力ありがとうございました。"
+        );
+
+
+        // 回答データを削除
+        localStorage.removeItem(
+          ANSWERS_KEY
+        );
+
+        localStorage.removeItem(
+          INDEX_KEY
+        );
+
+
+        // 完了画面
+        document.body.innerHTML = `
+          <div style="
+            max-width: 600px;
+            margin: 80px auto;
+            padding: 20px;
+            text-align: center;
+            font-family: sans-serif;
+          ">
+            <h2>アンケート終了</h2>
+
+            <p>
+              ご協力ありがとうございました。
+            </p>
+          </div>
+        `;
+
+
+        return;
+
       }
+
+
+      // 現在位置保存
+      localStorage.setItem(
+        INDEX_KEY,
+        currentIndex
+      );
+
+
+      // 次の画像
+      renderCurrentImage();
+
+
+    } catch (error) {
+
+      console.error(
+        "送信エラー:",
+        error
+      );
+
+
+      alert(
+        "回答の送信に失敗しました。\n\n" +
+        "通信環境を確認してください。"
+      );
+
+
+    } finally {
+
+      submitBtn.disabled =
+        false;
+
+      submitBtn.textContent =
+        originalText;
+
     }
 
-    // 使用する画像を指定
-const TARGET_IMAGES = [
-  "blouse_green (3).jpg",
-  "sweater_white (4).jpg",
-  "sweater_red (6).jpg",
-  "jacket_black (3).jpg",
-  "jacket_green (2).jpg"
-];
-
-// 指定した画像だけを使用
-const byName = new Map(
-  allImages.map(item => [item.name, item])
-);
-
-images = TARGET_IMAGES
-  .map(name => byName.get(name))
-  .filter(Boolean);
-
-if (images.length !== TARGET_IMAGES.length) {
-  throw new Error(
-    "指定した画像の一部がGitHubのimagesフォルダに見つかりません。"
-  );
-}
-
-localStorage.setItem(
-  IMAGES_KEY,
-  JSON.stringify(images.map(item => item.name))
-);
-    currentIndex =
-      Number.isInteger(savedIndex) && savedIndex >= 0
-        ? savedIndex
-        : 0;
-
-    statusEl.hidden = true;
-    surveyEl.hidden = false;
-
-    renderCurrentImage();
-
-  } catch (error) {
-    showError(
-      error.message || "読み込み中にエラーが発生しました。"
-    );
-
-    console.error(error);
   }
-}
+);
+
+
+// ===============================
+// 開始
+// ===============================
 
 init();
