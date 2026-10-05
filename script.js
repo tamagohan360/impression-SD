@@ -2,11 +2,9 @@
 // 設定
 // ===============================
 
-// Google Apps Script のURL
 const GAS_URL =
   "https://script.google.com/macros/s/AKfycbyMXkdPLPzSqs8Y_hEbFne9bC-PPSmVhHuYzNNFhBk03kr4ORJR2uUt9G-0Tfb5ffhN1w/exec";
 
-// GitHubの画像URL
 const GITHUB_IMAGE_BASE =
   "https://raw.githubusercontent.com/tamagohan360/impression-SD/main/images/";
 
@@ -79,26 +77,42 @@ let answers = {};
 
 // ===============================
 // HTML要素
+// ※ index.html のIDに合わせる
 // ===============================
 
+const statusEl =
+  document.getElementById("status");
+
+const surveyEl =
+  document.getElementById("survey");
+
+const completeEl =
+  document.getElementById("complete");
+
 const imageEl =
-  document.getElementById("currentImage");
+  document.getElementById("clothing-image");
 
 const imageNameEl =
-  document.getElementById("imageName");
+  document.getElementById("image-name");
+
+const progressEl =
+  document.getElementById("progress-text");
+
+const progressBarEl =
+  document.getElementById("progress-bar");
 
 const questionsEl =
   document.getElementById("questions");
 
-const progressEl =
-  document.getElementById("progress");
+const answerForm =
+  document.getElementById("answer-form");
 
 const submitBtn =
-  document.getElementById("submitBtn");
+  document.getElementById("submit-button");
 
 
 // ===============================
-// 指定画像を作成
+// 画像を設定
 // ===============================
 
 function createImages() {
@@ -108,7 +122,6 @@ function createImages() {
     return {
       name: name,
 
-      // ファイル名をURL用に変換
       url:
         GITHUB_IMAGE_BASE +
         encodeURIComponent(name)
@@ -137,42 +150,43 @@ async function getRespondentId() {
   }
 
 
-  try {
+  const response =
+    await fetch(GAS_URL);
 
-    const response =
-      await fetch(GAS_URL);
 
-    const data =
-      await response.json();
+  if (!response.ok) {
 
-    if (!data.respondentId) {
-
-      throw new Error(
-        "回答者IDを取得できませんでした。"
-      );
-
-    }
-
-    const respondentId =
-      data.respondentId;
-
-    localStorage.setItem(
-      RESPONDENT_ID_KEY,
-      respondentId
+    throw new Error(
+      "回答者IDを取得できませんでした。"
     );
-
-    return respondentId;
-
-  } catch (error) {
-
-    console.error(
-      "回答者ID取得エラー:",
-      error
-    );
-
-    throw error;
 
   }
+
+
+  const data =
+    await response.json();
+
+
+  if (!data.respondentId) {
+
+    throw new Error(
+      "回答者IDが取得できませんでした。"
+    );
+
+  }
+
+
+  const respondentId =
+    data.respondentId;
+
+
+  localStorage.setItem(
+    RESPONDENT_ID_KEY,
+    respondentId
+  );
+
+
+  return respondentId;
 
 }
 
@@ -196,7 +210,10 @@ function renderQuestions() {
         "question";
 
 
-      // 質問タイトル
+      // --------------------------------
+      // 質問文
+      // --------------------------------
+
       const title =
         document.createElement("div");
 
@@ -204,12 +221,15 @@ function renderQuestions() {
         "question-title";
 
       title.textContent =
-        `${index + 1}. ${question[0]} ― ${question[1]}`;
+        `${question[0]}　　${question[1]}`;
 
       questionDiv.appendChild(title);
 
 
+      // --------------------------------
       // 5段階評価
+      // --------------------------------
+
       const scale =
         document.createElement("div");
 
@@ -265,6 +285,7 @@ function renderQuestions() {
         span.textContent =
           value;
 
+
         label.appendChild(span);
 
 
@@ -298,8 +319,7 @@ function renderCurrentImage() {
   if (!image) {
 
     console.error(
-      "画像がありません:",
-      currentIndex
+      "画像がありません"
     );
 
     return;
@@ -308,7 +328,7 @@ function renderCurrentImage() {
 
 
   console.log(
-    "表示する画像:",
+    "表示画像:",
     image.name
   );
 
@@ -318,37 +338,57 @@ function renderCurrentImage() {
   );
 
 
+  // --------------------------------
   // 画像を表示
+  // --------------------------------
+
   imageEl.src =
     image.url;
 
 
+  imageEl.alt =
+    "評価する服の画像";
+
+
+  // --------------------------------
   // 画像名
-  if (imageNameEl) {
+  // --------------------------------
 
-    imageNameEl.textContent =
-      image.name;
-
-  }
+  imageNameEl.textContent =
+    image.name;
 
 
+  // --------------------------------
   // 進捗
-  if (progressEl) {
+  // --------------------------------
 
-    progressEl.textContent =
-      `${currentIndex + 1} / ${images.length}`;
-
-  }
+  progressEl.textContent =
+    `${currentIndex + 1} / ${images.length} 枚目`;
 
 
+  // --------------------------------
+  // プログレスバー
+  // --------------------------------
+
+  const percentage =
+    ((currentIndex + 1) / images.length) * 100;
+
+
+  progressBarEl.style.width =
+    `${percentage}%`;
+
+
+  // --------------------------------
   // 質問表示
+  // --------------------------------
+
   renderQuestions();
 
 }
 
 
 // ===============================
-// 現在の回答取得
+// 現在の回答を取得
 // ===============================
 
 function getCurrentAnswers() {
@@ -450,26 +490,26 @@ async function init() {
   try {
 
     console.log(
-      "アンケート開始"
+      "アンケートを開始します"
     );
 
 
-    // -------------------------------
+    // --------------------------------
     // 画像を設定
-    // -------------------------------
+    // --------------------------------
 
     createImages();
 
 
     console.log(
-      "使用画像:",
+      "使用する画像:",
       images
     );
 
 
-    // -------------------------------
-    // 回答データを復元
-    // -------------------------------
+    // --------------------------------
+    // 回答を復元
+    // --------------------------------
 
     const savedAnswers =
       localStorage.getItem(
@@ -491,9 +531,9 @@ async function init() {
     }
 
 
-    // -------------------------------
-    // 現在の画像番号を復元
-    // -------------------------------
+    // --------------------------------
+    // 現在の画像番号
+    // --------------------------------
 
     const savedIndex =
       localStorage.getItem(
@@ -513,7 +553,7 @@ async function init() {
     }
 
 
-    // 範囲外対策
+    // 範囲外の場合
     if (
       currentIndex < 0 ||
       currentIndex >= images.length
@@ -524,16 +564,28 @@ async function init() {
     }
 
 
-    // -------------------------------
-    // 画像表示
-    // -------------------------------
+    // --------------------------------
+    // 画像を表示
+    // --------------------------------
 
     renderCurrentImage();
 
 
-    // -------------------------------
+    // --------------------------------
+    // アンケート表示
+    // --------------------------------
+
+    surveyEl.hidden =
+      false;
+
+
+    statusEl.hidden =
+      true;
+
+
+    // --------------------------------
     // 回答者ID取得
-    // -------------------------------
+    // --------------------------------
 
     await getRespondentId();
 
@@ -551,6 +603,10 @@ async function init() {
     );
 
 
+    statusEl.textContent =
+      "アンケートの読み込みに失敗しました。";
+
+
     alert(
       "アンケートの読み込みに失敗しました。\n\n" +
       error.message
@@ -562,19 +618,25 @@ async function init() {
 
 
 // ===============================
-// 次へボタン
+// 回答フォーム送信
 // ===============================
 
-submitBtn.addEventListener(
-  "click",
-  async function () {
+answerForm.addEventListener(
+  "submit",
+  async function (event) {
 
+    // ページリロードを防ぐ
+    event.preventDefault();
+
+
+    // --------------------------------
     // 回答取得
+    // --------------------------------
+
     const currentAnswers =
       getCurrentAnswers();
 
 
-    // 未回答
     if (!currentAnswers) {
 
       alert(
@@ -586,12 +648,18 @@ submitBtn.addEventListener(
     }
 
 
+    // --------------------------------
     // 現在の画像
+    // --------------------------------
+
     const currentImage =
       images[currentIndex];
 
 
-    // 回答を保存
+    // --------------------------------
+    // 回答保存
+    // --------------------------------
+
     answers[currentImage.name] =
       currentAnswers;
 
@@ -602,8 +670,12 @@ submitBtn.addEventListener(
     );
 
 
+    // --------------------------------
     // ボタン無効化
-    submitBtn.disabled = true;
+    // --------------------------------
+
+    submitBtn.disabled =
+      true;
 
 
     const originalText =
@@ -616,14 +688,20 @@ submitBtn.addEventListener(
 
     try {
 
+      // --------------------------------
       // 回答者ID
+      // --------------------------------
+
       const respondentId =
         localStorage.getItem(
           RESPONDENT_ID_KEY
         );
 
 
+      // --------------------------------
       // GASへ送信
+      // --------------------------------
+
       await sendAnswers(
         respondentId,
         currentImage.name,
@@ -631,25 +709,21 @@ submitBtn.addEventListener(
       );
 
 
+      // --------------------------------
       // 次の画像
+      // --------------------------------
+
       currentIndex++;
 
 
-      // -------------------------------
+      // --------------------------------
       // 5枚すべて終了
-      // -------------------------------
+      // --------------------------------
 
       if (
         currentIndex >= images.length
       ) {
 
-        alert(
-          "アンケートは以上で終了です。\n\n" +
-          "ご協力ありがとうございました。"
-        );
-
-
-        // 回答データを削除
         localStorage.removeItem(
           ANSWERS_KEY
         );
@@ -659,22 +733,12 @@ submitBtn.addEventListener(
         );
 
 
-        // 完了画面
-        document.body.innerHTML = `
-          <div style="
-            max-width: 600px;
-            margin: 80px auto;
-            padding: 20px;
-            text-align: center;
-            font-family: sans-serif;
-          ">
-            <h2>アンケート終了</h2>
+        surveyEl.hidden =
+          true;
 
-            <p>
-              ご協力ありがとうございました。
-            </p>
-          </div>
-        `;
+
+        completeEl.hidden =
+          false;
 
 
         return;
@@ -682,21 +746,27 @@ submitBtn.addEventListener(
       }
 
 
+      // --------------------------------
       // 現在位置保存
+      // --------------------------------
+
       localStorage.setItem(
         INDEX_KEY,
         currentIndex
       );
 
 
-      // 次の画像
+      // --------------------------------
+      // 次の画像表示
+      // --------------------------------
+
       renderCurrentImage();
 
 
     } catch (error) {
 
       console.error(
-        "送信エラー:",
+        "回答送信エラー:",
         error
       );
 
@@ -712,6 +782,7 @@ submitBtn.addEventListener(
       submitBtn.disabled =
         false;
 
+
       submitBtn.textContent =
         originalText;
 
@@ -722,7 +793,7 @@ submitBtn.addEventListener(
 
 
 // ===============================
-// 開始
+// アンケート開始
 // ===============================
 
 init();
